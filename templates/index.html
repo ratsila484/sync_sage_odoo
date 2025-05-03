@@ -1,0 +1,287 @@
+<!-- templates/index.html -->
+{% extends 'layout.html' %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">Tableau de bord</h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <button id="start-sync" class="btn btn-primary" {% if sync_status.running %}disabled{% endif %}>
+            <i class="fas fa-sync-alt"></i> Démarrer la synchronisation
+        </button>
+        <button id="start-export" class="btn btn-primary" style="margin-left: 5px;" >
+            <i class="">📰</i> Exporter facture odoo
+        </button>
+       
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-xl-4 col-md-6 mb-4">
+        <div class="card border-left-primary shadow h-100 py-2 card-dashboard">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                            Dernière synchronisation
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800" id="last-sync">
+                            {% if sync_status.last_run %}
+                            {{ sync_status.last_run.strftime('%d/%m/%Y %H:%M:%S') }}
+                            {% else %}
+                            Jamais
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-calendar fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-4 col-md-6 mb-4">
+        <div class="card border-left-success shadow h-100 py-2 card-dashboard">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                            Articles synchronisés
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800" id="sync-count">
+                            {% if sync_status.results %}
+                            {{ sync_status.results|length }}
+                            {% else %}
+                            0
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-box fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-4 col-md-6 mb-4">
+        <div class="card border-left-info shadow h-100 py-2 card-dashboard">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                            Progression
+                        </div>
+                        <div class="row no-gutters align-items-center">
+                            <div class="col-auto">
+                                <div class="h5 mb-0 mr-3 font-weight-bold text-gray-800" id="progress-text">
+                                    {% if sync_status.total > 0 %}
+                                    {{ (sync_status.progress / sync_status.total * 100)|int }}%
+                                    {% else %}
+                                    0%
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col">
+                                <div class="progress progress-container">
+                                    <div id="progress-bar" class="progress-bar" role="progressbar" 
+                                         style="width: {% if sync_status.total > 0 %}{{ (sync_status.progress / sync_status.total * 100)|int }}{% else %}0{% endif %}%">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-clipboard-list fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                <h6 class="m-0 font-weight-bold text-primary">Résultats de synchronisation</h6>
+                <div class="dropdown no-arrow">
+                    <button id="refresh-results" class="btn btn-sm btn-light">
+                        <i class="fas fa-sync"></i> Actualiser
+                    </button>
+                </div>
+            </div>
+            <div class="card-body">
+                <div id="sync-status-alert" class="alert {% if sync_status.running %}alert-info{% else %}alert-secondary{% endif %}" role="alert">
+                    <i class="fas {% if sync_status.running %}fa-spinner fa-spin{% else %}fa-info-circle{% endif %}"></i>
+                    <span id="sync-status-text">
+                        {% if sync_status.running %}
+                        Synchronisation en cours...
+                        {% else %}
+                        En attente de synchronisation
+                        {% endif %}
+                    </span>
+                </div>
+                
+                <div class="table-responsive">
+                    <table class="table table-bordered" id="results-table">
+                        <thead>
+                            <tr>
+                                <th>Code</th>
+                                <th>Article</th>
+                                <th>Stock</th>
+                                <th>Statut</th>
+                                <th>Message</th>
+                            </tr>
+                        </thead>
+                        <tbody id="results-body">
+                            {% for result in sync_status.results %}
+                            <tr>
+                                <td>{{ result.code }}</td>
+                                <td>{{ result.name }}</td>
+                                <td>{{ result.stock }}</td>
+                                <td>
+                                    {% if result.status == 'updated' %}
+                                    <span class="badge bg-success">Mis à jour</span>
+                                    {% elif result.status == 'created' %}
+                                    <span class="badge bg-primary">Créé</span>
+                                    {% elif result.status == 'error' %}
+                                    <span class="badge bg-danger">Erreur</span>
+                                    {% else %}
+                                    <span class="badge bg-secondary">{{ result.status }}</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ result.message }}</td>
+                            </tr>
+                            {% endfor %}
+                            {% if not sync_status.results %}
+                            <tr>
+                                <td colspan="5" class="text-center">Aucun résultat disponible</td>
+                            </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    $(document).ready(function() {
+        let syncInterval;
+        
+        // Fonction pour mettre à jour le statut de synchronisation
+        function updateSyncStatus() {
+            $.get("/sync_status", function(data) {
+                // Mise à jour de l'état de la synchronisation
+                if (data.running) {
+                    $("#sync-status-alert").removeClass("alert-secondary alert-success").addClass("alert-info");
+                    $("#sync-status-text").html('<i class="fas fa-spinner fa-spin"></i> Synchronisation en cours...');
+                    $("#start-sync").prop('disabled', true);
+                    
+                    // Mise à jour de la barre de progression
+                    let progressPct = data.total > 0 ? Math.round((data.progress / data.total) * 100) : 0;
+                    $("#progress-bar").css("width", progressPct + "%");
+                    $("#progress-text").text(progressPct + "%");
+                    
+                    // Mise à jour des compteurs
+                    $("#sync-count").text(data.results_count.total);
+                    
+                    // Si on n'a pas encore défini l'intervalle de mise à jour, on le fait
+                    if (!syncInterval) {
+                        syncInterval = setInterval(updateSyncStatus, 1000);
+                    }
+                } else {
+                    // Si la synchronisation était en cours et vient de se terminer
+                    if (syncInterval) {
+                        clearInterval(syncInterval);
+                        syncInterval = null;
+                        
+                        // Mise à jour de l'interface après la fin de la synchro
+                        $("#sync-status-alert").removeClass("alert-info alert-secondary").addClass("alert-success");
+                        $("#sync-status-text").html('<i class="fas fa-check-circle"></i> Synchronisation terminée');
+                        $("#start-sync").prop('disabled', false);
+                        
+                        // Mise à jour de la date de dernière synchro
+                        if (data.last_run) {
+                            $("#last-sync").text(data.last_run);
+                        }
+                        
+                        // Mettre à jour les résultats
+                        refreshResults();
+                    }
+                }
+            });
+        }
+        
+        // Fonction pour rafraîchir les résultats de synchronisation
+        function refreshResults() {
+            $.get("/sync_results", function(data) {
+                let tableContent = '';
+                
+                if (data.length === 0) {
+                    tableContent = '<tr><td colspan="5" class="text-center">Aucun résultat disponible</td></tr>';
+                } else {
+                    data.forEach(function(result) {
+                        let statusBadge;
+                        
+                        if (result.status === 'updated') {
+                            statusBadge = '<span class="badge bg-success">Mis à jour</span>';
+                        } else if (result.status === 'created') {
+                            statusBadge = '<span class="badge bg-primary">Créé</span>';
+                        } else if (result.status === 'error') {
+                            statusBadge = '<span class="badge bg-danger">Erreur</span>';
+                        } else {
+                            statusBadge = '<span class="badge bg-secondary">' + result.status + '</span>';
+                        }
+                        
+                        tableContent += '<tr>' +
+                            '<td>' + result.code + '</td>' +
+                            '<td>' + result.name + '</td>' +
+                            '<td>' + result.stock + '</td>' +
+                            '<td>' + statusBadge + '</td>' +
+                            '<td>' + result.message + '</td>' +
+                            '</tr>';
+                    });
+                }
+                
+                $("#results-body").html(tableContent);
+            });
+        }
+        
+        // Gestionnaire d'événement pour le bouton "Démarrer la synchronisation"
+        $("#start-sync").click(function() {
+            $(this).prop('disabled', true);
+            $(this).html('<i class="fas fa-spinner fa-spin"></i> Synchronisation...');
+            
+            $("#sync-status-alert").removeClass("alert-secondary alert-success").addClass("alert-info");
+            $("#sync-status-text").html('<i class="fas fa-spinner fa-spin"></i> Démarrage de la synchronisation...');
+            
+            $.post("/sync", function(response) {
+                if (response.status === "started") {
+                    // Démarrer la mise à jour périodique du statut
+                    updateSyncStatus();
+                } else {
+                    alert("Erreur lors du démarrage de la synchronisation: " + response.message);
+                    $("#start-sync").prop('disabled', false);
+                    $("#start-sync").html('<i class="fas fa-sync-alt"></i> Démarrer la synchronisation');
+                }
+            });
+        });
+        $("#start-export").click(function() {
+            window.location.href = "http://127.0.0.1:5000/export";
+        });
+        
+        // Gestionnaire d'événement pour le bouton "Actualiser"
+        $("#refresh-results").click(function() {
+            refreshResults();
+        });
+        
+        // Vérifier le statut au chargement de la page
+        updateSyncStatus();
+    });
+</script>
+{% endblock %}

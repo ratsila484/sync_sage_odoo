@@ -1,0 +1,12 @@
+
+.sync-result-success {
+    background-color: rgba(25, 135, 84, 0.1);
+}
+
+.sync-result-error {
+    background-color: rgba(220, 53, 69, 0.1);
+}
+
+.sync-result-created {
+    background-color: rgba(13, 110, 253, 0.1);
+}

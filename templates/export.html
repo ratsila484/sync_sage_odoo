@@ -1,0 +1,263 @@
+<!-- templates/export.html -->
+{% extends 'layout.html' %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">Exportation des factures</h1>
+    <button id="start-sync" class="btn btn-primary" >
+        <i class="fas fa-sync-alt"></i> Syncroniser stock
+    </button>
+</div>
+<!-- <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">Tableau de bord</h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        
+        <button id="start-export" class="btn btn-primary" style="margin-left: 5px;" >
+            <i class="">📰</i> Exporter facture odoo
+        </button>
+       
+    </div>
+</div> -->
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Configuration de l'export</h6>
+            </div>
+            <div class="card-body">
+                <form id="export-form" method="POST" action="/export_invoices">
+                    <div class="mb-3">
+                        <label for="date_from" class="form-label">Date de début</label>
+                        <input type="date" class="form-control" id="date_from" name="date_from">
+                    </div>
+                    <div class="mb-3">
+                        <label for="date_to" class="form-label">Date de fin</label>
+                        <input type="date" class="form-control" id="date_to" name="date_to">
+                    </div>
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" class="form-check-input" id="all_invoices" name="all_invoices" checked>
+                        <label class="form-check-label" for="all_invoices">Toutes les factures</label>
+                    </div>
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary" id="export-button">
+                            <i class="fas fa-file-export"></i> Exporter les factures
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-12">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Derniers exports</h6>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-bordered" id="exports-table">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Fichier</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="exports-body">
+                            {% if export_history %}
+                                {% for export in export_history %}
+                                <tr>
+                                    <td>{{ export.date }}</td>
+                                    <td>{{ export.filename }}</td>
+                                    <td>
+                                        <a href="{{ url_for('download_export', filename=export.filename) }}" class="btn btn-sm btn-primary">
+                                            <i class="fas fa-download"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            {% else %}
+                                <tr>
+                                    <td colspan="3" class="text-center">Aucun export disponible</td>
+                                </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- <div class="row">
+    <div class="col-12">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                <h6 class="m-0 font-weight-bold text-primary">Informations de connexion Odoo</h6>
+            </div>
+            <div class="card-body">
+                <form id="odoo-config-form" method="POST" action="/save_odoo_config">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="odoo_url" class="form-label">URL Odoo</label>
+                                <input type="text" class="form-control" id="odoo_url" name="odoo_url" 
+                                       value="{{ odoo_config.url if odoo_config else 'http://192.168.0.155:8070' }}">
+                            </div>
+                            <div class="mb-3">
+                                <label for="odoo_db" class="form-label">Base de données</label>
+                                <input type="text" class="form-control" id="odoo_db" name="odoo_db" 
+                                       value="{{ odoo_config.db if odoo_config else 'mado' }}">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="odoo_username" class="form-label">Nom d'utilisateur</label>
+                                <input type="text" class="form-control" id="odoo_username" name="odoo_username" 
+                                       value="{{ odoo_config.username if odoo_config else 'rakotooni@gmail.com' }}">
+                            </div>
+                            <div class="mb-3">
+                                <label for="odoo_password" class="form-label">Mot de passe</label>
+                                <input type="password" class="form-control" id="odoo_password" name="odoo_password" 
+                                       value="{{ odoo_config.password if odoo_config else '' }}" 
+                                       placeholder="********">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-success">
+                            <i class="fas fa-save"></i> Enregistrer la configuration
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div> -->
+
+<!-- Modal d'export en cours -->
+<div class="modal fade" id="exportModal" tabindex="-1" aria-labelledby="exportModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="exportModalLabel">Export en cours</h5>
+            </div>
+            <div class="modal-body text-center">
+                <div class="spinner-border text-primary mb-3" role="status">
+                    <span class="visually-hidden">Chargement...</span>
+                </div>
+                <p id="export-status-text">Récupération des factures depuis Odoo...</p>
+                <div class="progress mt-3">
+                    <div id="export-progress-bar" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    $(document).ready(function() {
+        // Gestion de la case à cocher "Toutes les factures"
+        $("#all_invoices").change(function() {
+            if($(this).is(":checked")) {
+                $("#date_from, #date_to").prop('disabled', true);
+            } else {
+                $("#date_from, #date_to").prop('disabled', false);
+            }
+        });
+        
+        // État initial des champs de date
+        $("#all_invoices").trigger('change');
+        
+        // Soumission du formulaire d'export
+        $("#export-form").submit(function(e) {
+            e.preventDefault();
+            
+            // Afficher la modal d'export
+            $("#exportModal").modal('show');
+            $("#export-progress-bar").css('width', '10%');
+            
+            // Récupération des données du formulaire
+            let formData = {
+                all_invoices: $("#all_invoices").is(":checked"),
+                date_from: $("#date_from").val(),
+                date_to: $("#date_to").val()
+            };
+            
+            // Envoi de la requête AJAX
+            $.ajax({
+                url: "/export_invoices",
+                type: "POST",
+                data: JSON.stringify(formData),
+                contentType: "application/json",
+                dataType: "json",
+                success: function(response) {
+                    $("#export-progress-bar").css('width', '100%');
+                    
+                    setTimeout(function() {
+                        $("#exportModal").modal('hide');
+                        
+                        if(response.status === "success") {
+                            // Afficher un message de succès
+                            $("main").prepend(
+                                '<div class="alert alert-success alert-dismissible fade show" role="alert">' +
+                                'Export réussi ! <a href="/download_export/' + response.filename + '">Télécharger le fichier</a>' +
+                                '<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>' +
+                                '</div>'
+                            );
+                            
+                            // Actualiser la liste des exports
+                            location.reload();
+                        } else {
+                            // Afficher un message d'erreur
+                            $("main").prepend(
+                                '<div class="alert alert-danger alert-dismissible fade show" role="alert">' +
+                                'Erreur lors de l\'export : ' + response.message +
+                                '<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>' +
+                                '</div>'
+                            );
+                        }
+                    }, 500);
+                },
+                error: function(xhr, status, error) {
+                    $("#exportModal").modal('hide');
+                    
+                    $("main").prepend(
+                        '<div class="alert alert-danger alert-dismissible fade show" role="alert">' +
+                        'Erreur lors de l\'export : ' + error +
+                        '<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>' +
+                        '</div>'
+                    );
+                }
+            });
+        });
+        
+        // Mise à jour simulée de la progression
+        let exportInterval;
+        $('#exportModal').on('shown.bs.modal', function() {
+            let progress = 10;
+            exportInterval = setInterval(function() {
+                progress += 5;
+                if (progress <= 90) {
+                    $("#export-progress-bar").css('width', progress + '%');
+                    
+                    if (progress > 30 && progress < 60) {
+                        $("#export-status-text").text("Traitement des lignes de factures...");
+                    } else if (progress >= 60) {
+                        $("#export-status-text").text("Génération du fichier Excel...");
+                    }
+                }
+            }, 300);
+        });
+        
+        $('#exportModal').on('hidden.bs.modal', function() {
+            clearInterval(exportInterval);
+        });
+        $("#start-sync").click(function() {
+            window.location.href = "http://127.0.0.1:5000/";
+        });
+    });
+</script>
+{% endblock %}

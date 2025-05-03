@@ -1,0 +1,78 @@
+<!-- templates/config.html -->
+{% extends 'layout.html' %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">Configuration</h1>
+</div>
+
+<div class="row">
+    <div class="col-md-12">
+        <form method="post" action="/config">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Configuration Sage</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="sage_server" class="form-label">Serveur SQL</label>
+                            <input type="text" class="form-control" id="sage_server" name="sage_server" value="{{ config.sage.server }}" required>
+                            <div class="form-text">Nom du serveur SQL où se trouve la base Sage</div>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="sage_database" class="form-label">Base de données</label>
+                            <input type="text" class="form-control" id="sage_database" name="sage_database" value="{{ config.sage.database }}" required>
+                            <div class="form-text">Nom de la base Sage</div>
+                        </div>
+                    </div>
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" id="sage_trusted" name="sage_trusted" {% if config.sage.trusted %}checked{% endif %}>
+                        <label class="form-check-label" for="sage_trusted">
+                            Utiliser l'authentification Windows
+                        </label>
+                        <div class="form-text">Utilise les identifiants Windows pour se connecter à SQL Server</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Configuration Odoo</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="odoo_url" class="form-label">URL Odoo</label>
+                            <input type="text" class="form-control" id="odoo_url" name="odoo_url" value="{{ config.odoo.url }}" required>
+                            <div class="form-text">URL du serveur Odoo (ex: http://localhost:8069)</div>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="odoo_db" class="form-label">Base de données</label>
+                            <input type="text" class="form-control" id="odoo_db" name="odoo_db" value="{{ config.odoo.db }}" required>
+                            <div class="form-text">Nom de la base Odoo</div>
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="odoo_user" class="form-label">Utilisateur</label>
+                            <input type="text" class="form-control" id="odoo_user" name="odoo_user" value="{{ config.odoo.user }}" required>
+                            <div class="form-text">Nom d'utilisateur ou email</div>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="odoo_pwd" class="form-label">Mot de passe</label>
+                            <input type="password" class="form-control" id="odoo_pwd" name="odoo_pwd" placeholder="••••••••">
+                            <div class="form-text">Laissez vide pour conserver le mot de passe actuel</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                <a href="/" class="btn btn-secondary me-md-2">Annuler</a>
+                <button type="submit" class="btn btn-primary">Enregistrer</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
